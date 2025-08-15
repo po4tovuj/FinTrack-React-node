@@ -1,0 +1,67 @@
+{
+  "name": "fintrack",
+  "version": "1.0.0",
+  "description": "Personal Finance Management Application",
+  "main": "index.js",
+  "scripts": {
+    "dev": "docker compose up -d",
+    "start": "docker compose up",
+    "stop": "docker compose down",
+    "restart": "docker compose restart",
+    "build": "docker compose up --build -d",
+    "clean": "docker compose down -v",
+    "reset": "npm run clean && npm run build && npm run db:setup",
+    "logs": "docker compose logs -f",
+    "logs:frontend": "docker compose logs -f frontend",
+    "logs:backend": "docker compose logs -f backend",
+    "logs:db": "docker compose logs -f postgres",
+    "ps": "docker compose ps",
+    "db:migrate": "docker compose exec backend npx prisma migrate dev",
+    "db:seed": "docker compose exec backend npx prisma db seed",
+    "db:setup": "npm run db:migrate && npm run db:seed",
+    "db:studio": "docker compose exec backend npx prisma studio",
+    "db:reset": "docker compose exec backend npx prisma migrate reset --force",
+    "db:shell": "docker compose exec postgres psql -U postgres -d fintrack",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "docker compose exec frontend npm test",
+    "test:backend": "docker compose exec backend npm test",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "docker compose exec frontend npm run lint",
+    "lint:backend": "docker compose exec backend npm run lint",
+    "typecheck": "npm run typecheck:frontend && npm run typecheck:backend",
+    "typecheck:frontend": "docker compose exec frontend npm run type-check",
+    "typecheck:backend": "docker compose exec backend npm run type-check",
+    "install:all": "cd frontend && npm install && cd ../backend && npm install",
+    "dev:local": "npm run install:all && npm run db:services && npm run start:local",
+    "db:services": "docker compose up -d postgres redis",
+    "start:local": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "health": "curl -f http://localhost:4000/health || echo 'Backend not running'",
+    "setup": "cp .env.example .env && npm run build && npm run db:setup && echo 'Setup complete! Run npm run dev to start the application.'"
+  },
+  "keywords": [
+    "finance",
+    "budget",
+    "expense-tracker",
+    "nextjs",
+    "graphql",
+    "postgresql",
+    "docker"
+  ],
+  "author": "FinTrack Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/fintrack.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/fintrack/issues"
+  },
+  "homepage": "https://github.com/your-username/fintrack#readme"
+}

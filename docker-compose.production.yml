@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: fintrack
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_production_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fintrack-network
+    restart: unless-stopped
+
+  # Backend API (Node.js + Apollo Server)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-secure_production_password}@postgres:5432/fintrack
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      PORT: 4000
+      CORS_ORIGIN: ${FRONTEND_URL}
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+    networks:
+      - fintrack-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    environment:
+      NODE_ENV: production
+      NEXTAUTH_URL: ${FRONTEND_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXT_PUBLIC_GRAPHQL_URL: ${BACKEND_URL}/graphql
+      NEXT_PUBLIC_API_URL: ${BACKEND_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - fintrack-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  fintrack-network:
+    driver: bridge

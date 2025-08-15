@@ -1,0 +1,258 @@
+// Prisma schema for FinTrack application
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profile
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  transactions      Transaction[]
+  budgets           Budget[]
+  categories        Category[]
+  familiesCreated   Family[]            @relation("FamilyCreator")
+  familyMembers     FamilyMember[]
+  shoppingLists     ShoppingList[]
+  transactionSplits TransactionSplit[]
+  notifications     Notification[]
+
+  @@map("users")
+}
+
+// Category model for transaction categorization
+model Category {
+  id        String          @id @default(cuid())
+  name      String
+  color     String          // Hex color code
+  icon      String?         // Icon name or Unicode
+  type      TransactionType // INCOME or EXPENSE
+  userId    String?         // null for default system categories
+  isDefault Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  // Relations
+  user              User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  budgets           Budget[]
+  shoppingListItems ShoppingListItem[]
+
+  @@unique([name, userId, type])
+  @@map("categories")
+}
+
+// Transaction model for financial records
+model Transaction {
+  id          String          @id @default(cuid())
+  amount      Float
+  description String
+  type        TransactionType
+  date        DateTime
+  categoryId  String
+  userId      String
+  familyId    String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family   Family?  @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  splits   TransactionSplit[]
+
+  // Relation to shopping list items
+  shoppingListItem ShoppingListItem?
+
+  @@index([userId, date])
+  @@index([familyId, date])
+  @@index([categoryId])
+  @@map("transactions")
+}
+
+// Transaction split model for shared expenses
+model TransactionSplit {
+  id            String      @id @default(cuid())
+  transactionId String
+  userId        String
+  amount        Float
+  percentage    Float
+  settled       Boolean     @default(false)
+  settledAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([transactionId, userId])
+  @@map("transaction_splits")
+}
+
+// Budget model for expense planning
+model Budget {
+  id         String       @id @default(cuid())
+  categoryId String
+  amount     Float
+  period     BudgetPeriod
+  startDate  DateTime
+  endDate    DateTime
+  userId     String
+  familyId   String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  // Relations
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family   Family?  @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, userId, familyId, period, startDate])
+  @@index([userId, period])
+  @@index([familyId, period])
+  @@map("budgets")
+}
+
+// Family model for shared financial management
+model Family {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creator       User             @relation("FamilyCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  members       FamilyMember[]
+  transactions  Transaction[]
+  budgets       Budget[]
+  shoppingLists ShoppingList[]
+
+  @@map("families")
+}
+
+// Family member model for family permissions
+model FamilyMember {
+  id          String     @id @default(cuid())
+  familyId    String
+  userId      String
+  role        FamilyRole
+  permissions String[]   // Array of permission strings
+  joinedAt    DateTime   @default(now())
+
+  // Relations
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, userId])
+  @@map("family_members")
+}
+
+// Shopping list model for collaborative shopping
+model ShoppingList {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  familyId    String?
+  shared      Boolean  @default(false)
+  sharedWith  String[] // Array of email addresses
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family Family?            @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  items  ShoppingListItem[]
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("shopping_lists")
+}
+
+// Shopping list item model
+model ShoppingListItem {
+  id             String        @id @default(cuid())
+  listId         String
+  name           String
+  estimatedPrice Float
+  actualPrice    Float?
+  categoryId     String?
+  priority       ItemPriority
+  purchased      Boolean       @default(false)
+  purchasedAt    DateTime?
+  purchasedBy    String?
+  transactionId  String?       @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  shoppingList ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  category     Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  transaction  Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@index([listId])
+  @@index([categoryId])
+  @@map("shopping_list_items")
+}
+
+// Notification model for user alerts
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?            // Additional data as JSON
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+// Enums
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum BudgetPeriod {
+  MONTHLY
+  YEARLY
+}
+
+enum FamilyRole {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum ItemPriority {
+  MUST_HAVE
+  NICE_TO_HAVE
+  OPTIONAL
+}
+
+enum NotificationType {
+  BUDGET_ALERT
+  FAMILY_UPDATE
+  EXPENSE_REMINDER
+  SYSTEM
+}

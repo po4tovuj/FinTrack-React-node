@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "NEXTAUTH_SECRET": "@nextauth-secret",
+    "NEXT_PUBLIC_GRAPHQL_URL": "https://fintrack-backend-production.up.railway.app/graphql",
+    "NEXT_PUBLIC_API_URL": "https://fintrack-backend-production.up.railway.app"
+  }
+}
