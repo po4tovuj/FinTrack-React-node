@@ -383,7 +383,10 @@ function ResetPasswordLoading() {
 
 /**
  * Reset password page component with Suspense boundary
+ * Force dynamic rendering to avoid static generation issues
  */
+export const dynamic = 'force-dynamic';
+
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={<ResetPasswordLoading />}>
