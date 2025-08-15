@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -22,9 +22,9 @@ const resetPasswordSchema = z.object({
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 /**
- * Reset password page component for setting new password with token
+ * Component that uses useSearchParams - needs to be wrapped in Suspense
  */
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -360,5 +360,34 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Loading component for Suspense fallback
+ */
+function ResetPasswordLoading() {
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4">
+      <div className="w-full max-w-sm">
+        <div className="bg-white rounded-xl shadow-lg px-8 py-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading reset password form...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Reset password page component with Suspense boundary
+ */
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordLoading />}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
