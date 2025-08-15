@@ -1,5 +1,5 @@
 import { PrismaClient, User } from '@prisma/client';
-import { Redis } from 'redis';
+import { RedisClientType } from 'redis';
 import { Request } from 'express';
 
 /**
@@ -11,7 +11,7 @@ export interface Context {
   prisma: PrismaClient;
   
   // Redis client for caching and sessions
-  redis: Redis;
+  redis: RedisClientType;
   
   // Authenticated user (null if not authenticated)
   user: User | null;
