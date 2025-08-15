@@ -7,6 +7,12 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
+  // Enable static exports and optimize for deployment
+  output: 'standalone',
+  // Optimize build performance
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
   async rewrites() {
     return [
       {
